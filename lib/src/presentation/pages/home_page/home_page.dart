@@ -68,6 +68,7 @@ class HomePage extends StatelessWidget {
               mailQuota: (state) => 'Correo',
               resetPassword: (state) => 'Cambiar Contraseña',
               aboutUs: (state) => 'Acerca de ${Constants.appName}',
+              helpfulLinks: (state) => 'Enlaces Útiles',
             ),
           );
         },
@@ -101,7 +102,7 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ],
-                      error: (error) => [
+                      error: (error, items) => [
                         ListTile(
                           leading: const Icon(Icons.error),
                           title: Text(
@@ -109,12 +110,50 @@ class HomePage extends StatelessWidget {
                             style: Theme.of(context).textTheme.subtitle2,
                           ),
                         ),
+                        if (items.contains(HomeItemEnum.Logout))
+                          _buildDrawerItem(
+                            context: context,
+                            text: 'Cerrar Sesión',
+                            icon: Icons.logout,
+                            onTap: () async {
+                              _applyPopIfDrawerIsDialog(context);
+                              final option = await showDialog<bool>(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    content: const SelectableText(
+                                        '¿Está seguro que desea cerrar sesión?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop(true);
+                                        },
+                                        child: const Text('Si'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () async {
+                                          Navigator.of(context).pop(false);
+                                        },
+                                        child: const Text('No'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                              if (option ?? false) {
+                                context
+                                    .read<HomeBloc>()
+                                    .add(const HomeEvent.logout());
+                              }
+                            },
+                          ),
                       ],
                       profile: (p, x) => _getDrawerItems(context, p, x),
                       quota: (p, x) => _getDrawerItems(context, p, x),
                       mailQuota: (p, x) => _getDrawerItems(context, p, x),
                       resetPassword: (p, x) => _getDrawerItems(context, p, x),
                       aboutUs: (p, x) => _getDrawerItems(context, p, x),
+                      helpfulLinks: (p, x) => _getDrawerItems(context, p, x),
                       logout: () => [
                         ListTile(
                           leading: const GestionUhLoadingIndicator(),
@@ -177,13 +216,13 @@ class HomePage extends StatelessWidget {
           },
           profile: (state) {
             return BlocProvider<ProfileBloc>(
-              create: (_) => GetIt.I()..add(ProfileInitialized()),
+              create: (_) => GetIt.I()..add(const ProfileEvent.load()),
               child: const ProfilePage(),
             );
           },
           quota: (state) {
             return BlocProvider<QuotaBloc>(
-              create: (_) => GetIt.I()..add(QuotaInitialized()),
+              create: (_) => GetIt.I()..add(const QuotaEvent.load()),
               child: const QuotaPage(),
             );
           },
@@ -202,6 +241,9 @@ class HomePage extends StatelessWidget {
           },
           aboutUs: (state) {
             return const AboutInformationPage();
+          },
+          helpfulLinks: (state) {
+            return const HelpfulLinksPage();
           },
         );
       },
@@ -307,6 +349,16 @@ class HomePage extends StatelessWidget {
           onTap: () {
             _applyPopIfDrawerIsDialog(context);
             context.read<HomeBloc>().add(HomeEvent.goToAboutUs(profile));
+          },
+        );
+      case HomeItemEnum.HelpfulLinks:
+        return _buildDrawerItem(
+          context: context,
+          text: 'Enlaces Útiles',
+          icon: Icons.link,
+          onTap: () {
+            _applyPopIfDrawerIsDialog(context);
+            context.read<HomeBloc>().add(HomeEvent.goToHelpfulLinks(profile));
           },
         );
     }
